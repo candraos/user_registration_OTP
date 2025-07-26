@@ -11,12 +11,15 @@ import com.example.user_registration_OTP.Models.UserModel;
 import com.example.user_registration_OTP.Services.OtpService;
 import com.example.user_registration_OTP.Services.UserModelService;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 
 @RestController
 @RequestMapping("/otp")
 @RequiredArgsConstructor
+@Tag(name = "OTP Management", description = "Endpoints for managing OTPs")
+
 public class OtpController {
 
     private final UserModelService userService;

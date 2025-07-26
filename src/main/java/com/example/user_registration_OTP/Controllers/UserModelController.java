@@ -6,6 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
 import com.example.user_registration_OTP.DTO.UserModelDetailsDto;
@@ -15,16 +18,22 @@ import com.example.user_registration_OTP.Models.UserModel;
 import com.example.user_registration_OTP.Services.RabbitMQService;
 import com.example.user_registration_OTP.Services.UserModelService;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 
 
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
+@Tag(name = "User Management", description = "Endpoints for managing users")
+
 public class UserModelController {
 
     private final  UserModelService userModelService;
 
     private final  ModelMapper modelMapper;
+
+    private final AuthenticationManager authenticationManager;
 
 private final RabbitMQService rabbitMQService;
 
@@ -47,9 +56,14 @@ public ResponseEntity<?> loginUser(@RequestBody UserModelRequestDto userModel) {
             return ResponseEntity.status(401).body("Invalid credentials.");
         }
 
-        // Generate JWT token
+       
+        Authentication authentication = authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(userModel.getEmail(), userModel.getPassword()));
+			if (authentication.isAuthenticated()) {
         String jwtToken = userModelService.generateJwtToken(existingUser);
         return ResponseEntity.ok(jwtToken);
+            }
+            return ResponseEntity.status(500).body("An error occurred during login.");
     } catch (Exception e) {
         return ResponseEntity.status(500).body("An error occurred during login.");
     }
