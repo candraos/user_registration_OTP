@@ -17,6 +17,8 @@ public class OtpService {
 
     private final UserModelService userService;
 
+    private final RedisService redisService;
+
     public OTP saveOtp(String email, int otpCode) {
         OTP otp = OTP.builder()
             .otpCode(otpCode)
@@ -28,7 +30,26 @@ public class OtpService {
     }
 
     public OTP findByUser(UserModel user) {
-        return otpRepository.findByUser(user);
+        Object otpCode = redisService.get(user.getEmail());
+        Object TTL = redisService.get("TTL");
+        if (otpCode != null && TTL != null) {
+            LocalDateTime expirationTime = LocalDateTime.parse(TTL.toString());
+            redisService.delete(user.getEmail());
+            redisService.delete("TTL");
+            if (expirationTime.isAfter(LocalDateTime.now())) {
+                int otpCodeInt = Integer.parseInt(otpCode.toString());
+                return OTP.builder()
+                    .otpCode(otpCodeInt)
+                    .expirationDate(expirationTime)
+                    .user(user)
+                    .build();
+            } else {
+                return null;
+                
+            }
+           
+        }
+        return null; // If no OTP found or expired
     }
 
     public void validateOtp(OTP otp) {

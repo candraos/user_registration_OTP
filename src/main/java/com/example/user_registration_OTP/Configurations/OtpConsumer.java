@@ -1,11 +1,12 @@
 package com.example.user_registration_OTP.Configurations;
 
+import java.time.LocalDateTime;
+
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-import com.example.user_registration_OTP.DTO.OTPRequestDto;
-import com.example.user_registration_OTP.Models.OTP;
 import com.example.user_registration_OTP.Services.OtpService;
+import com.example.user_registration_OTP.Services.RedisService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -15,7 +16,9 @@ public class OtpConsumer {
 
     private final OtpService otpService;
 
-    @RabbitListener(queues = "otpQueue")
+    private final RedisService redisService;
+
+    @RabbitListener(queues = "otpQueue", ackMode = "MANUAL")
     public void consumeOtpEvent(String message) {
         System.out.println("Received OTP Event: " + message);
         String[] parts = message.split(": ");
@@ -25,8 +28,11 @@ public class OtpConsumer {
             // send otp code by email. here i am just logging it as requested
             // In a real application, you would use an email service to send the OTP
             System.out.println("Email: " + email + ", OTP Code: " + otpCode);
-           
-            otpService.saveOtp(email, otpCode); 
+           redisService.save(email, otpCode);
+           LocalDateTime expirationTime = LocalDateTime.now().plusMinutes(5);
+            redisService.save("TTL", expirationTime.toString()); // Save expiration time in Redis
+            
+            // otpService.saveOtp(email, otpCode); 
         } else {
             System.out.println("Invalid OTP message format.");
         }
